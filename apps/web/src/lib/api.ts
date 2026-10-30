@@ -61,10 +61,10 @@ export const api = {
   // Servers
   getServers: () => request<{ servers: any[] }>('/servers'),
   getServer: (id: string) => request<{ server: any }>(`/servers/${id}`),
-  createEnrollmentToken: (name: string) =>
+  createEnrollmentToken: (name: string, panelUrl?: string) =>
     request<{ server: any; token: string; installCommand: string }>('/servers/enrollment-token', {
       method: 'POST',
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, panelUrl }),
     }),
   deleteServer: (id: string) => request<{ success: boolean }>(`/servers/${id}`, { method: 'DELETE' }),
 

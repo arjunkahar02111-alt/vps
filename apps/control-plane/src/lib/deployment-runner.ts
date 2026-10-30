@@ -152,7 +152,7 @@ export async function runDeploymentPipeline(jobId: string): Promise<void> {
       }
 
       // Build environment variables array
-      const envList = job.project.envVariables.map(ev => `${ev.key}=${ev.value}`);
+      const envList = job.project.envVariables.map((ev: any) => `${ev.key}=${ev.value}`);
       envList.push(`PORT=${job.project.containerPort || 3000}`);
       envList.push(`NODE_ENV=production`);
       envList.push(`KARVION_APP=${job.project.slug}`);

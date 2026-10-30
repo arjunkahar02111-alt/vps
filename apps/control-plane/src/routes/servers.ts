@@ -152,6 +152,7 @@ echo -e "\${GREEN}[+] Agent active and streaming telemetry.\${NC}"
   fastify.post('/enrollment-token', { preHandler: [requireAuth] }, async (req, reply) => {
     const schema = z.object({
       name: z.string().min(2),
+      panelUrl: z.string().optional(),
     });
 
     const parsed = schema.safeParse(req.body);
@@ -170,9 +171,19 @@ echo -e "\${GREEN}[+] Agent active and streaming telemetry.\${NC}"
       },
     });
 
-    const host = req.headers.host || 'localhost:4000';
-    const protocol = req.headers['x-forwarded-proto'] || 'http';
-    const installCommand = `curl -sSL ${protocol}://${host}/api/v1/servers/install-agent.sh | sudo bash -s -- --token ${token}`;
+    let baseUrl = parsed.data.panelUrl?.trim();
+    if (!baseUrl) {
+      const host = req.headers.host || 'localhost:4000';
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      baseUrl = `${protocol}://${host}`;
+    } else {
+      if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+        baseUrl = `http://${baseUrl}`;
+      }
+      baseUrl = baseUrl.replace(/\/$/, '');
+    }
+
+    const installCommand = `curl -sSL ${baseUrl}/api/v1/servers/install-agent.sh | sudo bash -s -- --token ${token}`;
 
     return reply.send({
       server,

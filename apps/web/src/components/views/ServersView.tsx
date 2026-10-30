@@ -12,6 +12,7 @@ interface ServersViewProps {
 export function ServersView({ servers, onRefresh }: ServersViewProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [serverName, setServerName] = useState('');
+  const [panelUrl, setPanelUrl] = useState('');
   const [enrollData, setEnrollData] = useState<any>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -21,7 +22,7 @@ export function ServersView({ servers, onRefresh }: ServersViewProps) {
     if (!serverName) return;
     setLoading(true);
     try {
-      const res = await api.createEnrollmentToken(serverName);
+      const res = await api.createEnrollmentToken(serverName, panelUrl || undefined);
       setEnrollData(res);
       onRefresh();
     } catch (err: any) {
@@ -167,6 +168,22 @@ export function ServersView({ servers, onRefresh }: ServersViewProps) {
                     className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-xs text-white focus:border-red-500 outline-none"
                     required
                   />
+                </div>
+
+                <div>
+                  <label className="text-xs text-zinc-300 block mb-1">
+                    Panel Public IP / Reachable Address (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={panelUrl}
+                    onChange={(e) => setPanelUrl(e.target.value)}
+                    placeholder="e.g. 192.168.1.5:4000 or your-public-ip:4000 or tunnel domain"
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-xs text-white focus:border-red-500 outline-none font-mono"
+                  />
+                  <p className="text-[10px] text-zinc-500 mt-1">
+                    Enter your computer's public IP or domain so your remote VPS knows where to connect.
+                  </p>
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <button

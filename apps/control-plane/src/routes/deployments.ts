@@ -21,7 +21,7 @@ export const deploymentsRoutes: FastifyPluginAsync = async (fastify: FastifyInst
       take: 50,
     });
 
-    const parsed = deployments.map(d => ({
+    const parsed = deployments.map((d: any) => ({
       ...d,
       logs: JSON.parse(d.logs || '[]'),
     }));

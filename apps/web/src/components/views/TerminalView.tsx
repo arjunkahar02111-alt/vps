@@ -14,7 +14,9 @@ export function TerminalView() {
 
   const connectTerminal = () => {
     const token = getToken() || '';
-    const ws = new WebSocket(`ws://localhost:4000/api/v1/terminal/ws?token=${token}`);
+    const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    const protocol = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${host}:4000/api/v1/terminal/ws?token=${token}`);
     wsRef.current = ws;
 
     ws.onopen = () => {

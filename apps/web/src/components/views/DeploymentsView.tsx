@@ -59,7 +59,9 @@ export function DeploymentsView({ servers, onRefresh }: DeploymentsViewProps) {
   useEffect(() => {
     if (!activeJobId) return;
 
-    const wsUrl = `ws://localhost:4000/ws/deployments/${activeJobId}`;
+    const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    const protocol = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${host}:4000/ws/deployments/${activeJobId}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onmessage = (event) => {

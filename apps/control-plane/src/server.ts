@@ -52,7 +52,15 @@ async function bootstrap() {
 
   await fastify.register(websocket);
 
-  // Health probe
+  // Health probe & Root
+  fastify.get('/', async (req, reply) => ({
+    status: 'ONLINE',
+    product: 'KARVION CONTROL',
+    developer: 'Arjun Kahar',
+    dashboard: `http://${req.headers.host?.split(':')[0] || 'localhost'}:3000`,
+    timestamp: new Date().toISOString(),
+  }));
+
   fastify.get('/health', async () => ({
     status: 'ok',
     product: 'KARVION CONTROL',

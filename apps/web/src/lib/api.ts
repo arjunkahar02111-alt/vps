@@ -1,4 +1,7 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+const API_BASE =
+  typeof window !== 'undefined'
+    ? '/api/v1'
+    : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;

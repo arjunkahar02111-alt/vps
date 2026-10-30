@@ -1,0 +1,212 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         String    @default("SUPERADMIN") // SUPERADMIN, ADMIN, OPERATOR, VIEWER
+  mfaEnabled   Boolean   @default(false)
+  mfaSecret    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}
+
+model VPSServer {
+  id              String             @id @default(uuid())
+  name            String
+  ipAddress       String
+  hostname        String             @default("localhost")
+  status          String             @default("ONLINE") // ONLINE, OFFLINE, DEGRADED, PROVISIONING
+  osName          String             @default("Ubuntu 24.04 LTS")
+  architecture    String             @default("x86_64")
+  agentVersion    String             @default("1.0.0")
+  cpuCores        Int                @default(4)
+  totalRamMb      Int                @default(8192)
+  totalDiskGb     Int                @default(100)
+  uptimeSeconds   Int                @default(0)
+  isLocalHost     Boolean            @default(false)
+  enrollmentToken String?            @unique
+  lastHeartbeat   DateTime           @default(now())
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  projects        Project[]
+  deployments     Deployment[]
+  databases       DatabaseInstance[]
+  firewallRules   FirewallRule[]
+  backups         Backup[]
+  domains         Domain[]
+}
+
+model Project {
+  id             String                @id @default(uuid())
+  name           String
+  slug           String                @unique
+  serverId       String
+  server         VPSServer             @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  projectType    String                @default("NODEJS") // NODEJS, PYTHON, PHP, JAVA, GO, RUST, STATIC, DOCKERFILE
+  processType    String                @default("WEB_APP") // WEB_APP, API, BOT_DISCORD, BOT_TELEGRAM, WORKER, STATIC_SITE
+  framework      String?
+  runtimeVersion String?
+  projectRoot    String
+  buildCommand   String?
+  startCommand   String?
+  installCommand String?
+  workingDir     String?
+  containerPort  Int?                  @default(3000)
+  publishedPort  Int?
+  domainName     String?
+  enableSsl      Boolean               @default(false)
+  restartPolicy  String                @default("unless-stopped")
+  cpuLimit       Float                 @default(1.0)
+  memoryLimitMb  Int                   @default(512)
+  storageQuotaMb Int?                  @default(2048)
+  status         String                @default("STOPPED") // STOPPED, STARTING, RUNNING, CRASHED, BUILDING, FAILED
+  containerId    String?
+  restartCount   Int                   @default(0)
+  lastDeployedAt DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  envVariables   EnvironmentVariable[]
+  deployments    Deployment[]
+  domains        Domain[]
+  backups        Backup[]
+}
+
+model EnvironmentVariable {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  key       String
+  value     String
+  isSecret  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, key])
+}
+
+model Deployment {
+  id           String    @id @default(uuid())
+  projectId    String
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  serverId     String
+  server       VPSServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  version      Int       @default(1)
+  step         String    @default("INIT")
+  status       String    @default("PENDING") // PENDING, IN_PROGRESS, SUCCESS, FAILED, CANCELLED
+  logs         String    @default("[]") // JSON stringified array of logs
+  errorMessage String?
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+}
+
+model DatabaseInstance {
+  id                String    @id @default(uuid())
+  serverId          String
+  server            VPSServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  name              String
+  engine            String    // POSTGRES, MYSQL, MARIADB, REDIS, MONGODB, SQLITE
+  port              Int
+  databaseName      String?
+  username          String?
+  passwordEncrypted String?
+  containerId       String?
+  status            String    @default("STOPPED")
+  version           String    @default("latest")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model FirewallRule {
+  id           String    @id @default(uuid())
+  serverId     String
+  server       VPSServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  port         Int
+  protocol     String    @default("TCP") // TCP, UDP, BOTH
+  action       String    @default("ALLOW") // ALLOW, DENY
+  direction    String    @default("INBOUND") // INBOUND, OUTBOUND
+  sourceCidr   String?   @default("0.0.0.0/0")
+  description  String
+  isSystemRule Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+}
+
+model Domain {
+  id            String    @id @default(uuid())
+  serverId      String
+  server        VPSServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  domainName    String    @unique
+  containerPort Int       @default(3000)
+  sslEnabled    Boolean   @default(false)
+  forceHttps    Boolean   @default(true)
+  dnsVerified   Boolean   @default(false)
+  sslIssuedAt   DateTime?
+  sslExpiresAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Backup {
+  id             String    @id @default(uuid())
+  serverId       String
+  server         VPSServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  name           String
+  type           String    // APPLICATION, DATABASE, FULL_SYSTEM
+  sizeBytes      Int       @default(0)
+  filePath       String
+  sha256Checksum String
+  createdAt      DateTime  @default(now())
+}
+
+model FileUpload {
+  id             String   @id @default(uuid())
+  projectId      String?
+  fileName       String
+  fileSize       Int
+  totalChunks    Int
+  uploadedChunks Int      @default(0)
+  status         String   @default("UPLOADING") // UPLOADING, PROCESSING, COMPLETED, FAILED
+  targetPath     String
+  createdAt      DateTime @default(now())
+}
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  actor      String   @default("Arjun Kahar (Admin)")
+  operation  String
+  targetType String   // SERVER, APPLICATION, DEPLOYMENT, FILE, FIREWALL, DATABASE, DOMAIN
+  targetId   String?
+  status     String   @default("SUCCESS") // SUCCESS, FAILURE, WARNING
+  details    String?  // JSON stringified details
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

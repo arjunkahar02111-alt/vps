@@ -1,0 +1,18 @@
+FROM node:20-alpine AS builder
+WORKDIR /app
+RUN npm install -g pnpm
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
+COPY packages ./packages
+COPY apps/web ./apps/web
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @karvion/common build
+WORKDIR /app/apps/web
+RUN pnpm build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app /app
+WORKDIR /app/apps/web
+EXPOSE 3000
+CMD ["npm", "start"]

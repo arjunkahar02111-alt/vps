@@ -1,0 +1,21 @@
+FROM node:20-alpine AS builder
+WORKDIR /app
+RUN npm install -g pnpm
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
+COPY packages ./packages
+COPY apps/control-plane ./apps/control-plane
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @karvion/common build
+RUN pnpm --filter @karvion/runtime-detector build
+WORKDIR /app/apps/control-plane
+RUN npx prisma generate
+RUN pnpm build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+RUN apk add --no-cache curl docker-cli
+ENV NODE_ENV=production
+COPY --from=builder /app /app
+WORKDIR /app/apps/control-plane
+EXPOSE 4000
+CMD ["node", "dist/server.js"]

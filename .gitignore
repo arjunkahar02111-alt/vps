@@ -1,0 +1,15 @@
+node_modules/
+.next/
+dist/
+build/
+*.log
+.env
+.env.local
+.env.*.local
+storage/
+uploads/staging/
+*.sqlite
+*.sqlite-journal
+.DS_Store
+Thumbs.db
+pnpm-lock.yaml

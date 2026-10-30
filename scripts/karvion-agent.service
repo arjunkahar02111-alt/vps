@@ -1,0 +1,18 @@
+[Unit]
+Description=KARVION CONTROL - Remote VPS Node Agent
+Documentation=https://github.com/karvion/control
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/karvion/agent
+ExecStart=/usr/local/bin/node /opt/karvion/agent/dist/agent.js
+Restart=always
+RestartSec=5s
+EnvironmentFile=-/etc/karvion/agent.env
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

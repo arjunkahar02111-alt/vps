@@ -85,14 +85,9 @@ if [ -d "$INSTALL_DIR/.git" ]; then
   git reset --hard HEAD
   git pull origin main
 else
-  mkdir -p "$INSTALL_DIR"
-  if [ -d "$PWD/apps" ]; then
-    cp -r "$PWD"/* "$INSTALL_DIR"/ 2>/dev/null || true
-    cd "$INSTALL_DIR"
-  else
-    git clone https://github.com/arjunkahar02111-alt/vps.git "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
-  fi
+  rm -rf "$INSTALL_DIR"
+  git clone https://github.com/arjunkahar02111-alt/vps.git "$INSTALL_DIR"
+  cd "$INSTALL_DIR"
 fi
 
 # 7. Install Dependencies and Build

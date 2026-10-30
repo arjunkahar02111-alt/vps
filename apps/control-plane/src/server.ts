@@ -26,6 +26,27 @@ import { monitoringRoutes } from './routes/monitoring';
 import { logsRoutes } from './routes/logs';
 import { terminalRoutes } from './routes/terminal';
 
+async function getPublicOrPrimaryIp(): Promise<string> {
+  try {
+    const res = await fetch('https://api.ipify.org', { signal: AbortSignal.timeout(3000) });
+    if (res.ok) {
+      const ip = (await res.text()).trim();
+      if (ip && ip.length > 6) return ip;
+    }
+  } catch {
+    // fallback
+  }
+  const nets = os.networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] || []) {
+      if (net.family === 'IPv4' && !net.internal && !net.address.startsWith('169.254')) {
+        return net.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
+
 const fastify = Fastify({
   logger: false,
 });
@@ -135,17 +156,30 @@ async function bootstrap() {
     console.log('[Karvion Control] Default Superadmin seeded: admin@karvion.local / KarvionAdmin2026!');
   }
 
-  // Ensure Primary Host VPS node exists
+  // Clean up any old dummy test servers
+  await prisma.vPSServer.deleteMany({
+    where: {
+      OR: [
+        { status: 'PROVISIONING' },
+        { ipAddress: 'Pending Discovery...' },
+      ],
+    },
+  }).catch(() => {});
+
+  // Ensure and sync the Primary Host VPS node with actual system hardware & IP
+  const hostIp = await getPublicOrPrimaryIp();
+  const totalMem = Math.round(os.totalmem() / (1024 * 1024));
+  const osDesc = `${os.type()} ${os.release()}`;
+
   const primaryServer = await prisma.vPSServer.findFirst({ where: { isLocalHost: true } });
   if (!primaryServer) {
-    const totalMem = Math.round(os.totalmem() / (1024 * 1024));
     await prisma.vPSServer.create({
       data: {
-        name: 'Primary Node (Host VPS)',
-        ipAddress: '127.0.0.1',
+        name: `VPS Node (${os.hostname()})`,
+        ipAddress: hostIp,
         hostname: os.hostname(),
         status: 'ONLINE',
-        osName: `${os.type()} ${os.release()}`,
+        osName: osDesc,
         architecture: os.arch(),
         cpuCores: os.cpus().length,
         totalRamMb: totalMem,
@@ -153,7 +187,23 @@ async function bootstrap() {
         isLocalHost: true,
       },
     });
-    console.log('[Karvion Control] Primary Node registered and online.');
+    console.log(`[Karvion Control] VPS Node (${os.hostname()}) registered at ${hostIp}`);
+  } else {
+    // Update existing entry with actual VPS hostname and IP
+    await prisma.vPSServer.update({
+      where: { id: primaryServer.id },
+      data: {
+        name: `VPS Node (${os.hostname()})`,
+        ipAddress: hostIp,
+        hostname: os.hostname(),
+        osName: osDesc,
+        architecture: os.arch(),
+        cpuCores: os.cpus().length,
+        totalRamMb: totalMem,
+        status: 'ONLINE',
+      },
+    });
+    console.log(`[Karvion Control] VPS Node (${os.hostname()}) synced at ${hostIp}`);
   }
 
   // Ensure baseline firewall rules

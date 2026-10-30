@@ -220,8 +220,9 @@ echo -e "\${GREEN}[+] Agent active and streaming telemetry.\${NC}"
       return reply.status(404).send({ error: 'Server not found' });
     }
 
-    if (server.isLocalHost) {
-      return reply.status(400).send({ error: 'Cannot remove Primary Localhost Server' });
+    const totalServers = await prisma.vPSServer.count();
+    if (totalServers <= 1) {
+      return reply.status(400).send({ error: 'At least one active VPS server must remain in the panel' });
     }
 
     await prisma.vPSServer.delete({ where: { id } });

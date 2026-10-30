@@ -10,6 +10,10 @@ storage/
 uploads/staging/
 *.sqlite
 *.sqlite-journal
+*.db
+*.db-journal
+*.db-wal
+karvion.db
 .DS_Store
 Thumbs.db
 pnpm-lock.yaml

@@ -108,7 +108,7 @@ export function ServersView({ servers, onRefresh }: ServersViewProps) {
                 >
                   {srv.status}
                 </span>
-                {!srv.isLocalHost && (
+                {servers.length > 1 && (
                   <button
                     onClick={() => handleDelete(srv.id)}
                     title="Remove Node"

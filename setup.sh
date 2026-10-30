@@ -77,18 +77,24 @@ else
 fi
 
 # 6. Setup Directory & Clone/Sync Code
-INSTALL_DIR="/opt/karvion-vps"
-echo -e "${GREEN}[5/8] Synchronizing KARVION CONTROL source code into ${INSTALL_DIR}...${NC}"
-
-if [ -d "$INSTALL_DIR/.git" ]; then
-  cd "$INSTALL_DIR"
-  git reset --hard HEAD
-  git pull origin main
+if [ -f "$PWD/package.json" ] && [ -d "$PWD/apps" ]; then
+  INSTALL_DIR="$PWD"
+  echo -e "${GREEN}[5/8] Using current repository directory: ${INSTALL_DIR}...${NC}"
+  git pull origin main 2>/dev/null || true
 else
-  rm -rf "$INSTALL_DIR"
-  git clone https://github.com/arjunkahar02111-alt/vps.git "$INSTALL_DIR"
-  cd "$INSTALL_DIR"
+  INSTALL_DIR="/opt/karvion-vps"
+  echo -e "${GREEN}[5/8] Synchronizing KARVION CONTROL source code into ${INSTALL_DIR}...${NC}"
+  if [ -d "$INSTALL_DIR/.git" ]; then
+    cd "$INSTALL_DIR"
+    git reset --hard HEAD
+    git pull origin main
+  else
+    rm -rf "$INSTALL_DIR"
+    git clone https://github.com/arjunkahar02111-alt/vps.git "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
+  fi
 fi
+cd "$INSTALL_DIR"
 
 # 7. Install Dependencies and Build
 echo -e "${GREEN}[6/8] Installing workspace packages and compiling modules...${NC}"

@@ -101,6 +101,21 @@ echo -e "${GREEN}[6/8] Installing workspace packages and compiling modules...${N
 pnpm install --ignore-scripts || pnpm install --no-frozen-lockfile
 
 echo -e "${CYAN}[*] Generating Prisma Database Engine...${NC}"
+mkdir -p /opt/karvion/{applications,uploads/staging,backups}
+
+if [ ! -f "$INSTALL_DIR/apps/control-plane/.env" ]; then
+  cat << 'EOF' > "$INSTALL_DIR/apps/control-plane/.env"
+PORT=4000
+HOST=0.0.0.0
+DATABASE_URL="file:./karvion.db"
+JWT_SECRET="karvion-super-secret-jwt-key-2026-arjun-kahar"
+STORAGE_ROOT="/opt/karvion"
+AGENT_SHARED_SECRET="karvion-agent-hmac-secret-auth"
+NODE_ENV=production
+EOF
+fi
+
+export DATABASE_URL="file:./karvion.db"
 cd "$INSTALL_DIR/apps/control-plane"
 npx prisma generate
 npx prisma db push

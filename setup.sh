@@ -97,7 +97,7 @@ fi
 
 # 7. Install Dependencies and Build
 echo -e "${GREEN}[6/8] Installing workspace packages and compiling modules...${NC}"
-pnpm install
+pnpm install --ignore-scripts || pnpm install --no-frozen-lockfile
 
 echo -e "${CYAN}[*] Generating Prisma Database Engine...${NC}"
 cd "$INSTALL_DIR/apps/control-plane"
